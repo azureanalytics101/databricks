@@ -106,7 +106,7 @@ dfSource = spark.read.jdbc(url=jdbcUrl, table=query, properties=connectionProper
 
 # COMMAND ----------
 
-spark.sql("CREATE DATABASE IF NOT EXISTS {DATABASE}".format(DATABASE = persistedDatabase));
+$spark.sql("CREATE DATABASE IF NOT EXISTS {DATABASE}".format(DATABASE = persistedDatabase));
 spark.sql("""CREATE TABLE IF NOT EXISTS {DATABASE}.{TABLE}
              USING DELTA
              LOCATION '{PATH}'
@@ -125,19 +125,23 @@ spark.sql("""DELETE FROM {DATABASE}.{TABLE} as sink
 
 # COMMAND ----------
 
-# MAGIC %sql
-# MAGIC CREATE TABLE IF NOT EXISTS persisted.Audit
-# MAGIC USING 
+display(spark.sql("""CREATE TABLE IF NOT EXISTS {DATABASE}.LoadAudit
+                     USING DELTA
+                     LOCATION '/mnt//vendeltalakeadw/dbo/Bronze/Audit'
+                     SELECT max(version) as LastestVersion, '{TABLE}' as TableName, "N" as Processed from (describe history persisted.{TABLE})""".format(DATABASE = persistedDatabase,TABLE=persistedTable)))
 
 # COMMAND ----------
 
-latest_version = spark.sql("SELECT max(version) FROM (DESCRIBE HISTORY persisted.address)").collect()
-df = spark.sql('select * from persisted.address version as of {version}'.format(version=latest_version[0][0]))
-display(df)
+# MAGIC %sql
+# MAGIC select * from persisted.LoadAudit
 
 # COMMAND ----------
 
 spark.sql("Create database if not exists {DATAWAREHOUSE}".format(DATAWAREHOUSE=warehouse))
+
+# COMMAND ----------
+
+version = (spark.sql("SELECT LastestVersion from persisted.LoadAudit").collect())[0][0]
 
 # COMMAND ----------
 
