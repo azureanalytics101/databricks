@@ -125,6 +125,12 @@ spark.sql("""DELETE FROM {DATABASE}.{TABLE} as sink
 
 # COMMAND ----------
 
+# MAGIC %sql
+# MAGIC CREATE TABLE IF NOT EXISTS persisted.Audit
+# MAGIC USING 
+
+# COMMAND ----------
+
 latest_version = spark.sql("SELECT max(version) FROM (DESCRIBE HISTORY persisted.address)").collect()
 df = spark.sql('select * from persisted.address version as of {version}'.format(version=latest_version[0][0]))
 display(df)
